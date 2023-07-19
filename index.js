@@ -74,7 +74,8 @@ const run = async () => {
 
     //get user info from db
     app.post("/login", async (req, res) => {
-      const { email, password } = req.body;
+      const userReq = req.body;
+      const { email, password } = userReq;
       const user = await usersCollection.findOne({ userEmail: email });
       if (user) {
         const passwordMatch = await bcrypt.compare(password, user.userPass);
@@ -85,6 +86,42 @@ const run = async () => {
         }
       } else {
         res.json({ error: "No Record Existed" });
+      }
+    });
+
+    //check buyer role
+    app.get("/buyer", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        userEmail: email,
+      };
+      const user = await usersCollection.findOne(query);
+      res.send({ isBuyer: user?.role === "House Renter" });
+    });
+
+    //check seller role
+    app.get("/seller", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        userEmail: email,
+      };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === "House Owner" });
+    });
+
+    //current user check
+    app.get("/currentUser", async (req, res) => {
+      const userEmail = req.query.email;
+      try {
+        const user = await usersCollection.findOne({ userEmail });
+        if (user) {
+          res.json({ email: user.userEmail });
+        } else {
+          res.status(404).json({ error: "User not found" });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
     });
   } finally {
