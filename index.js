@@ -42,6 +42,9 @@ const client = new MongoClient(uri, {
 
 const run = async () => {
   const usersCollection = client.db("house-hunter").collection("users");
+  const houseCollection = client
+    .db("house-hunter")
+    .collection("house collection");
 
   await usersCollection.createIndex({ userEmail: 1 }, { unique: true });
 
@@ -123,6 +126,60 @@ const run = async () => {
         console.error("Error fetching user data:", error);
         res.status(500).json({ error: "Internal server error" });
       }
+    });
+
+    //add house
+    app.post("/addHouse", async (req, res) => {
+      const house = req.body;
+      const upload = await houseCollection.insertOne(house);
+      res.send(upload);
+    });
+
+    // get my house
+    app.get("/my-houses", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        email: email,
+      };
+      const result = await houseCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/my-houses/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await houseCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.put("/update-house/:id", async (req, res) => {
+      const houseId = req.params.id;
+      const updatedHouseData = req.body;
+      try {
+        const result = await houseCollection.updateOne(
+          { _id: new ObjectId(houseId) },
+          { $set: updatedHouseData }
+        );
+
+        if (result.modifiedCount === 1) {
+          res.json({ acknowledged: true });
+        } else {
+          res.status(404).json({ error: "House not found" });
+        }
+      } catch (error) {
+        console.error("Error updating house:", error);
+        res.status(500).json({ error: "Could not update house" });
+      }
+    });
+
+    // delete house
+    app.delete("/delete-house/:id", async (req, res) => {
+      const deleteId = req.params.id;
+      const query = {
+        _id: new ObjectId(deleteId),
+      };
+      const result = await houseCollection.deleteOne(query);
+      res.send(result);
     });
   } finally {
   }
