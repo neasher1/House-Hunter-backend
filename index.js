@@ -45,6 +45,9 @@ const run = async () => {
   const houseCollection = client
     .db("house-hunter")
     .collection("house collection");
+  const bookingCollection = client
+    .db("house-hunter")
+    .collection("book collection");
 
   await usersCollection.createIndex({ userEmail: 1 }, { unique: true });
 
@@ -145,6 +148,13 @@ const run = async () => {
       res.send(result);
     });
 
+    // get all house
+    app.get("/all-house", async (req, res) => {
+      const query = {};
+      const result = await houseCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.get("/my-houses/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -179,6 +189,33 @@ const run = async () => {
         _id: new ObjectId(deleteId),
       };
       const result = await houseCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //post booking cars in db
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    // get my house
+    app.get("/my-book-houses", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        email: email,
+      };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // delete house
+    app.delete("/my-book-houses/:id", async (req, res) => {
+      const deleteId = req.params.id;
+      const query = {
+        _id: new ObjectId(deleteId),
+      };
+      const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
   } finally {
